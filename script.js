@@ -1,72 +1,105 @@
 //your code here
-document.addEventListener("DOMContentLoaded", function() {
-  const gameContainer = document.getElementById("gameContainer");
-  const scoreElement = document.getElementById("score");
-  const totalPixels = 20 * 20;
-  const snakeSpeed = 100; // in milliseconds
-  let direction = "right";
-  let score = 0;
-  let snake = [61, 60, 59]; // initial positions of the snake
+let snakeBody = [{row: 20, col: 1}, {row: 20, col: 2}, {row: 20, col: 3}];
+let direction = 'right';
+let score = 0;
 
-  // Create the game grid with pixels
-  for (let i = 0; i < totalPixels; i++) {
-    const pixel = document.createElement("div");
-    pixel.classList.add("pixel");
-    pixel.setAttribute("id", `pixel${i}`);
-    gameContainer.appendChild(pixel);
+function updateSnake() {
+  let head = snakeBody[snakeBody.length - 1];
+  let newHead = {row: head.row, col: head.col};
+  if (direction === 'right') {
+    newHead.col++;
+  } else if (direction === 'left') {
+    newHead.col--;
+  } else if (direction === 'up') {
+    newHead.row--;
+  } else if (direction === 'down') {
+    newHead.row++;
   }
-
-  // Place the food at a random position
-  const food = generateFood();
-  document.getElementById(`pixel${food}`).classList.add("food");
-
-  // Start moving the snake automatically
-  const intervalId = setInterval(moveSnake, snakeSpeed);
-
-  // Event listener for arrow key presses
-  document.addEventListener("keydown", changeDirection);
-
-  // Function to move the snake
-  function moveSnake() {
-    const head = snake[0];
-    let newHead;
-
-    // Calculate the new position of the head based on the current direction
-    if (direction === "right") {
-      newHead = head + 1;
-    } else if (direction === "left") {
-      newHead = head - 1;
-    } else if (direction === "up") {
-      newHead = head - 20;
-    } else if (direction === "down") {
-      newHead = head + 20;
-    }
-
-    // Check if the snake hits the wall or itself
-    if (
-      newHead < 0 ||
-      newHead >= totalPixels ||
-      (direction === "right" && newHead % 20 === 0) ||
-      (direction === "left" && (newHead + 1) % 20 === 0) ||
-      document.getElementById(`pixel${newHead}`).classList.contains("snakeBodyPixel")
-    ) {
-      clearInterval(intervalId);
-      alert("Game Over!");
+  if (newHead.row < 1 || newHead.row > 40 || newHead.col < 1 || newHead.col > 40) {
+    // Snake collided with the wall
+    gameOver();
+    return;
+  }
+  for (let i = 0; i < snakeBody.length; i++) {
+    if (newHead.row === snakeBody[i].row && newHead.col === snakeBody[i].col) {
+      // Snake collided with itself
+      gameOver();
       return;
     }
+  }
+  snakeBody.push(newHead);
+  if (newHead.row === food.row && newHead.col === food.col) {
+    // Snake ate the food
+    score++;
+    generateFood();
+  } else {
+    snakeBody.shift();
+  }
+  updateGame();
+}
 
-    // Add the new head to the snake array
-    snake.unshift(newHead);
-
-    // Check if the snake eats the food
-    if (newHead === food) {
-      // Increase the score
-      score += 10;
-      scoreElement.textContent = score;
-
-      // Remove the food
-      document.getElementById(`pixel${food}`).classList.remove("food");
-
-      // Generate new food
-      food = generateFood();
-      document.getElementById(`pixel${food}`).
+setInterval(updateSnake, 100);
+document.addEventListener('keydown', (event) => {
+    if (event.keyCode === 37) {
+        // Left arrow key pressed
+        if (direction !== 'right') {
+        direction = 'left';
+        }
+        } else if (event.keyCode === 38) {
+        // Up arrow key pressed
+        if (direction !== 'down') {
+        direction = 'up';
+        }
+        } else if (event.keyCode === 39) {
+        // Right arrow key pressed
+        if (direction !== 'left') {
+        direction = 'right';
+        }
+        } else if (event.keyCode === 40) {
+        // Down arrow key pressed
+        if (direction !== 'up') {
+        direction = 'down';
+        }
+        }
+        });
+        
+        let food = {row: 1, col: 1};
+        
+        function generateFood() {
+        let foodRow = Math.floor(Math.random() * 40) + 1;
+        let foodCol = Math.floor(Math.random() * 40) + 1;
+        while (isOccupied(foodRow, foodCol)) {
+        foodRow = Math.floor(Math.random() * 40) + 1;
+        foodCol = Math.floor(Math.random() * 40) + 1;
+        }
+        food = {row: foodRow, col: foodCol};
+        updateGame();
+        }
+        
+        function isOccupied(row, col) {
+        for (let i = 0; i < snakeBody.length; i++) {
+        if (row === snakeBody[i].row && col === snakeBody[i].col) {
+        return true;
+        }
+        }
+        return false;
+        }
+        
+        
+        function updateGame() {
+        let pixels = document.querySelectorAll('.pixel');
+        pixels.forEach(pixel => {
+        pixel.classList.remove('snakeBodyPixel');
+        pixel.classList.remove('food');
+        });
+        snakeBody.forEach(bodyPixel => {
+        let pixelId = 'pixel' + (bodyPixel.row - 1) * 40 + bodyPixel.col;
+        let pixel = document.getElementById(pixelId);
+        pixel.classList.add('snakeBodyPixel');
+        });
+        let foodPixelId = 'pixel' + (food.row - 1) * 40 + food.col;
+        let foodPixel = document.getElementById(foodPixelId);
+        foodPixel.classList.add('food');
+        let scoreBoard = document.querySelector('.scoreBoard');
+        scoreBoard.innerHTML = 'Score: ' + score;
+        }
