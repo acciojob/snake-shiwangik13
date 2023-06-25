@@ -1,89 +1,123 @@
-//your code here
 document.addEventListener("DOMContentLoaded", () => {
   const gameContainer = document.getElementById("gameContainer");
   const scoreElement = document.getElementById("score");
+  const gridSize = 10; // Number of rows and columns in the grid
+  const pixelSize = 40;
+  const snakeSpeed = 100;
 
-  const pixelSize = 10;
-  const gameSize = 400;
-  const rows = gameSize / pixelSize;
-  const cols = gameSize / pixelSize;
-
-  let snake = [{ row: 19, col: 0 }];
+  let snake = [
+    { row: 2, col: 5 },
+    { row: 2, col: 4 },
+    { row: 2, col: 3 }
+  ];
   let direction = "right";
-  let food = null;
+  let food = { row: 5, col: 7 };
   let score = 0;
 
   function createPixel(id, className) {
     const pixel = document.createElement("div");
+    pixel.id = `pixel${id}`;
     pixel.className = className;
-    pixel.id = id;
     return pixel;
   }
 
-  function renderSnake() {
+  function draw() {
+    // Clear the game container
+    gameContainer.innerHTML = "";
+
+    // Draw the grid
+    for (let row = 1; row <= gridSize; row++) {
+      for (let col = 1; col <= gridSize; col++) {
+        const gridPixel = createPixel(`${row}-${col}`, "pixel");
+        gameContainer.appendChild(gridPixel);
+      }
+    }
+
+    // Draw the snake
     snake.forEach((pixel, index) => {
-      const pixelId = `pixel-${pixel.row}-${pixel.col}`;
-      const snakePixel = createPixel(pixelId, "pixel snakeBodyPixel");
+      const snakePixel = createPixel(index, "snakeBodyPixel");
+      snakePixel.style.top = `${(pixel.row - 1) * pixelSize}px`;
+      snakePixel.style.left = `${(pixel.col - 1) * pixelSize}px`;
       gameContainer.appendChild(snakePixel);
     });
-  }
 
-  function renderFood() {
-    if (food === null) {
-      const row = Math.floor(Math.random() * rows);
-      const col = Math.floor(Math.random() * cols);
-      const pixelId = `pixel-${row}-${col}`;
-      food = createPixel(pixelId, "pixel food");
-      gameContainer.appendChild(food);
-    }
+    // Draw the food
+    const foodPixel = createPixel("food", "food");
+    foodPixel.style.top = `${(food.row - 1) * pixelSize}px`;
+    foodPixel.style.left = `${(food.col - 1) * pixelSize}px`;
+    gameContainer.appendChild(foodPixel);
+
+    // Update the score
+    scoreElement.textContent = score;
   }
 
   function moveSnake() {
-    const head = Object.assign({}, snake[0]);
-    switch (direction) {
-      case "up":
-        head.row--;
-        break;
-      case "down":
-        head.row++;
-        break;
-      case "left":
-        head.col--;
-        break;
-      case "right":
-        head.col++;
-        break;
+    const head = { ...snake[0] };
+
+    if (direction === "right") {
+      head.col++;
+    } else if (direction === "left") {
+      head.col--;
+    } else if (direction === "up") {
+      head.row--;
+    } else if (direction === "down") {
+      head.row++;
     }
+
     snake.unshift(head);
 
-    if (head.row === foodRow && head.col === foodCol) {
+    if (head.row === food.row && head.col === food.col) {
       score++;
-      scoreElement.textContent = score;
-      gameContainer.removeChild(food);
-      food = null;
+      generateFood();
     } else {
       snake.pop();
     }
 
-    if (head.row < 0 || head.row >= rows || head.col < 0 || head.col >= cols) {
+    if (head.row < 1 || head.row > gridSize || head.col < 1 || head.col > gridSize) {
       gameOver();
-      return;
     }
 
-    renderSnake();
+    draw();
+  }
 
-    const tail = snake.slice(1);
-    if (tail.some((pixel) => pixel.row === head.row && pixel.col === head.col)) {
-      gameOver();
-      return;
+  function changeDirection(event) {
+    const key = event.keyCode;
+    const leftKey = 37;
+    const upKey = 38;
+    const rightKey = 39;
+    const downKey = 40;
+
+    if (key === leftKey && direction !== "right") {
+      direction = "left";
+    } else if (key === upKey && direction !== "down") {
+      direction = "up";
+    } else if (key === rightKey && direction !== "left") {
+      direction = "right";
+    } else if (key === downKey && direction !== "up") {
+      direction = "down";
     }
+  }
 
-    setTimeout(moveSnake, 100);
+  function generateFood() {
+    food = {
+      row: Math.floor(Math.random() * gridSize) + 1,
+      col: Math.floor(Math.random() * gridSize) + 1
+    };
+
+    snake.forEach(pixel => {
+      if (pixel.row === food.row && pixel.col === food.col) {
+        generateFood();
+      }
+    });
   }
 
   function gameOver() {
+    clearInterval(gameInterval);
     alert("Game Over!");
-    snake = [{ row: 19, col: 0 }];
-    direction = "right";
-    score = 0;
-    scoreElement.textContent = score
+  }
+
+  document.addEventListener("keydown", changeDirection);
+  generateFood();
+  draw();
+  const gameInterval = setInterval(moveSnake, snakeSpeed);
+});
